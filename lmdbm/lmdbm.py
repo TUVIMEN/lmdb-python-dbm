@@ -50,6 +50,15 @@ def remove_lmdbm(file: str, missing_ok: bool = True) -> None:
         base.rmdir()
 
 
+def to_bytes(value):
+    if isinstance(value, bytes):
+        return value
+    elif isinstance(value, str):
+        return value.encode("utf8")
+
+    raise TypeError(value)
+
+
 class Lmdb(MutableMapping, Generic[KT, VT]):
     autogrow_error = "Failed to grow LMDB ({}). Is there enough disk space available?"
     autogrow_msg = "Grew database (%s) map size to %s"
@@ -105,23 +114,13 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
         self.env.set_mapsize(value)
 
     def _pre_key(self, key: KT) -> bytes:
-        if isinstance(key, bytes):
-            return key
-        elif isinstance(key, str):
-            return key.encode("Latin-1")
-
-        raise TypeError(key)
+        return to_bytes(key)
 
     def _post_key(self, key: bytes) -> KT:
         return key
 
     def _pre_value(self, value: VT) -> bytes:
-        if isinstance(value, bytes):
-            return value
-        elif isinstance(value, str):
-            return value.encode("Latin-1")
-
-        raise TypeError(value)
+        return to_bytes(value)
 
     def _post_value(self, value: bytes) -> VT:
         return value
