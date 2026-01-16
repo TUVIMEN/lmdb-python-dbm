@@ -73,6 +73,7 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
         """
         Opens the database `file`.
         `flag`: r (read only, existing), w (read and write, existing),
+                a (read, write, create if not exists), n (read, write, overwrite existing)
                 c (read, write, create if not exists), n (read, write, overwrite existing)
         `map_size`: Initial database size. Defaults to 2**20 (1MB).
         `autogrow`: Automatically grow the database size when `map_size` is exceeded.
@@ -84,7 +85,8 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
             env = lmdb.open(file, map_size=map_size, max_dbs=1, readonly=True, create=False, mode=mode, **kwargs)
         elif flag == "w":  # Open existing database for reading and writing
             env = lmdb.open(file, map_size=map_size, max_dbs=1, readonly=False, create=False, mode=mode, **kwargs)
-        elif flag == "c":  # Open database for reading and writing, creating it if it doesn't exist
+        # what a retarded convention to name it 'c'
+        elif flag == "a" or flag == "c":  # Open database for reading and writing, creating it if it doesn't exist
             env = lmdb.open(file, map_size=map_size, max_dbs=1, readonly=False, create=True, mode=mode, **kwargs)
         elif flag == "n":  # Always create a new, empty database, open for reading and writing
             remove_lmdbm(file)
