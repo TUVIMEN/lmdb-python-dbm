@@ -3,7 +3,8 @@ from pathlib import Path
 from genutility.test import MyTestCase
 from lmdb import Error
 
-from lmdbm import Lmdb
+from lmdbm import Lmdb, LmdbCompress, LmdbJson
+import lmdbm
 from lmdbm.lmdbm import remove_lmdbm
 
 
@@ -68,6 +69,80 @@ class LmdbmTests(MyTestCase):
 
             self.assertEqual(f.setdefault(b"xxx", b"foo"), b"foo")
             self.assertEqual(f[b"xxx"], b"foo")
+
+        self._delete_db()
+
+
+class LmdbmJsonTests(MyTestCase):
+    _name = "./test2.db"
+
+    def _init_db(self):
+        with lmdbm.open(self._name, "n", classtype=[LmdbJson]) as db:
+            db["a"] = 5
+            db["b"] = True
+            db["c"] = "a"
+            db["d"] = [1, 5]
+            db["e"] = {"a": 52, "b": 95}
+
+    def _delete_db(self):
+        remove_lmdbm(self._name, False)
+
+    def test_modify(self):
+        self._init_db()
+        with lmdbm.open(self._name, "c", classtype=[LmdbJson]) as f:
+            # self.assertEqual(f.setdefault(b"xxx", b"foo"), b"foo")
+            self.assertEqual(f["a"], 5)
+            self.assertEqual(f["b"], True)
+            self.assertEqual(f["c"], "a")
+            self.assertEqual(tuple(f["d"]), (1, 5))
+            self.assertEqual(f["e"]["a"], 52)
+            self.assertEqual(f["e"]["b"], 95)
+
+        self._delete_db()
+
+
+class LmdbmCompressTests(MyTestCase):
+    _name = "./test3.db"
+
+    def _init_db(self):
+        with lmdbm.open(self._name, "n", classtype=[LmdbCompress]) as db:
+            db["a"] = "245252895125589252525259"
+
+    def _delete_db(self):
+        remove_lmdbm(self._name, False)
+
+    def test_modify(self):
+        self._init_db()
+        with lmdbm.open(self._name, "c", classtype=[LmdbCompress]) as f:
+            self.assertEqual(f["a"], b"245252895125589252525259")
+
+        self._delete_db()
+
+
+class LmdbmJsonCompressTests(MyTestCase):
+    _name = "./test4.db"
+
+    def _init_db(self):
+        with lmdbm.open(self._name, "n", classtype=[LmdbJson, LmdbCompress]) as db:
+            db["a"] = 5
+            db["b"] = True
+            db["c"] = "a"
+            db["d"] = [1, 5]
+            db["e"] = {"a": 52, "b": 95}
+
+    def _delete_db(self):
+        remove_lmdbm(self._name, False)
+
+    def test_modify(self):
+        self._init_db()
+        with lmdbm.open(self._name, "c", classtype=[LmdbJson, LmdbCompress]) as f:
+            # self.assertEqual(f.setdefault(b"xxx", b"foo"), b"foo")
+            self.assertEqual(f["a"], 5)
+            self.assertEqual(f["b"], True)
+            self.assertEqual(f["c"], "a")
+            self.assertEqual(tuple(f["d"]), (1, 5))
+            self.assertEqual(f["e"]["a"], 52)
+            self.assertEqual(f["e"]["b"], 95)
 
         self._delete_db()
 

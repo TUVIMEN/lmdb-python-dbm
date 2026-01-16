@@ -301,12 +301,16 @@ class Lmdb(MutableMapping, Generic[KeyT, ValueT]):
 
 
 def LmdbJson(classtype=Lmdb):
-    class JsonLmdb(Lmdb):
+    class entity(classtype):
         def _pre_value(self, value):
-            return json.dumps(value, separators=(",", ":")).encode(text_encoding)
+            value = json.dumps(value, separators=(",", ":")).encode(text_encoding)
+            return super()._pre_value(value)
 
         def _post_value(self, value):
-            return json.loads(value.decode(text_encoding))
+            value = super()._post_value(value)
+            return json.loads(value)
+
+    return entity
 
 
 def LmdbCompress(classtype=Lmdb):
@@ -314,22 +318,23 @@ def LmdbCompress(classtype=Lmdb):
         def __init__(
             self, env, compressfunc=gzip.compress, decompressfunc=gzip.decompress, compresslevel: int = 9, **kwargs
         ):
-            classtype.__init__(env, **kwargs)
+            super().__init__(env, **kwargs)
             self.compresslevel = compresslevel
             self.compressfunc = compressfunc
             self.decompressfunc = decompressfunc
 
         def _pre_value(self, value: ValueT) -> bytes:
-            value = classtype._pre_value(value)
-            return self.compressfunc(value, self.compresslevel)
+            value = self.compressfunc(to_bytes(value), self.compresslevel)
+            return super()._pre_value(value)
 
         def _post_value(self, value: bytes) -> ValueT:
-            return self.decompressfunc(value)
+            value = self.decompressfunc(value)
+            return super()._post_value(value)
 
     return entity
 
 
-def chain(*args):
+def chain(args):
     assert len(args) > 0
     ret = Lmdb
     for i in reversed(args):
