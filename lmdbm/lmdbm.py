@@ -194,7 +194,8 @@ class Lmdb(MutableMapping, Generic[KeyT, ValueT]):
                     raise SizeError("Map size exceeded")
                 new_map_size = self.map_size * 2
                 self.map_size = new_map_size
-                self.logger("{} {} {}".format(self.autogrow_msg, self.env.path(), new_map_size))
+                if self.logger is not None:
+                    self.logger("{} {} {}".format(self.autogrow_msg, self.env.path(), new_map_size))
 
         raise GrowError(self.autogrow_error.format(self.env.path()))
 
@@ -281,7 +282,8 @@ class Lmdb(MutableMapping, Generic[KeyT, ValueT]):
                     raise SizeError("Map size exceeded")
                 new_map_size = self.map_size * 2
                 self.map_size = new_map_size
-                self.logger("{} {} {}".format(self.autogrow_msg, self.env.path(), new_map_size))
+                if self.logger is not None:
+                    self.logger("{} {} {}".format(self.autogrow_msg, self.env.path(), new_map_size))
 
         raise GrowError(self.autogrow_error.format(self.env.path()))
 
