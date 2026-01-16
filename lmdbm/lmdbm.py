@@ -2,8 +2,7 @@ import logging
 from collections.abc import Mapping, MutableMapping
 from gzip import compress, decompress
 from pathlib import Path
-from sys import exit
-from typing import Any, Generic, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Generic, Iterator, List, Optional, Tuple, TypeVar, Union, Callable
 
 import lmdb
 from typing_extensions import Self
@@ -12,12 +11,18 @@ T = TypeVar("T")
 KT = TypeVar("KT")
 VT = TypeVar("VT")
 
-logger = logging.getLogger(__name__)
-
 _DEFAULT = object()
 
 
-class error(Exception):
+class Error(Exception):
+    pass
+
+
+class SizeError(Exception):
+    pass
+
+
+class GrowError(SizeError):
     pass
 
 
@@ -49,13 +54,21 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
     autogrow_error = "Failed to grow LMDB ({}). Is there enough disk space available?"
     autogrow_msg = "Grew database (%s) map size to %s"
 
-    def __init__(self, env: lmdb.Environment, autogrow: bool) -> None:
+    def __init__(self, env: lmdb.Environment, autogrow: bool, logger: Callable) -> None:
         self.env = env
         self.autogrow = autogrow
+        self.logger = logger
 
     @classmethod
     def open(
-        cls, file: str, flag: str = "r", mode: int = 0o755, map_size: int = 2**20, autogrow: bool = True, **kwargs
+        cls,
+        file: str,
+        flag: str = "r",
+        mode: int = 0o755,
+        map_size: int = 2**20,
+        autogrow: bool = True,
+        logger: Callable = None,
+        **kwargs,
     ) -> "Lmdb":
         """
         Opens the database `file`.
@@ -79,7 +92,7 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
         else:
             raise ValueError("Invalid flag")
 
-        return cls(env, autogrow)
+        return cls(env, autogrow, logger)
 
     @property
     def map_size(self) -> int:
@@ -128,12 +141,12 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
                     return
             except lmdb.MapFullError:
                 if not self.autogrow:
-                    raise
+                    raise SizeError("Map size exceeded")
                 new_map_size = self.map_size * 2
                 self.map_size = new_map_size
-                logger.info(self.autogrow_msg, self.env.path(), new_map_size)
+                self.logger("{} {} {}".format(self.autogrow_msg, self.env.path(), new_map_size))
 
-        exit(self.autogrow_error.format(self.env.path()))
+        raise GrowError(self.autogrow_error.format(self.env.path()))
 
     def __delitem__(self, key: KT) -> None:
         with self.env.begin(write=True) as txn:
@@ -215,12 +228,12 @@ class Lmdb(MutableMapping, Generic[KT, VT]):
                         return
             except lmdb.MapFullError:
                 if not self.autogrow:
-                    raise
+                    raise SizeError("Map size exceeded")
                 new_map_size = self.map_size * 2
                 self.map_size = new_map_size
-                logger.info(self.autogrow_msg, self.env.path(), new_map_size)
+                self.logger("{} {} {}".format(self.autogrow_msg, self.env.path(), new_map_size))
 
-        exit(self.autogrow_error.format(self.env.path()))
+        raise GrowError(self.autogrow_error.format(self.env.path()))
 
     def sync(self) -> None:
         self.env.sync()
