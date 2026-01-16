@@ -96,9 +96,12 @@ class Lmdb(MutableMapping, Generic[KeyT, ValueT]):
     ) -> "Lmdb":
         """
         Opens the database `path`.
-        `flag`: r (read only, existing), w (read and write, existing),
-                a (read, write, create if not exists), n (read, write, overwrite existing)
-                c (read, write, create if not exists), n (read, write, overwrite existing)
+        `flag`: r (read only, existing),
+                w (read and write, existing),
+                a (read, write, create if not exists)
+                c (read, write, create if not exists),
+                n (read, write, overwrite existing)
+
         `autogrow`: Automatically grow the database size when `map_size` is exceeded.
                 WARNING: Set this to `False` for multi-process write access.
         `path`: Location of directory (if subdir=True) or file prefix to store the database.
