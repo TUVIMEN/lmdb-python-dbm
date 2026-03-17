@@ -1,6 +1,6 @@
 """Python DBM style wrapper around LMDB (Lightning Memory-Mapped Database)"""
 
-from .lmdbm import Lmdb, SizeError, GrowError, Error, open, LmdbJson, LmdbCompress
+from .lmdbm import Lmdb, SizeError, GrowError, Error, open, LmdbJson, LmdbCompress, LmdbThreadSafe
 
 __version__ = "0.0.6"
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from genutility.test import MyTestCase
 from lmdb import Error
 
-from lmdbm import Lmdb, LmdbCompress, LmdbJson
+from lmdbm import Lmdb, LmdbCompress, LmdbJson, LmdbThreadSafe
 import lmdbm
 from lmdbm.lmdbm import remove_lmdbm
 
@@ -135,7 +135,7 @@ class LmdbmJsonCompressTests(MyTestCase):
 
     def test_modify(self):
         self._init_db()
-        with lmdbm.open(self._name, "c", classtype=[LmdbJson, LmdbCompress]) as f:
+        with lmdbm.open(self._name, "c", classtype=[LmdbJson, LmdbCompress, LmdbThreadSafe]) as f:
             # self.assertEqual(f.setdefault(b"xxx", b"foo"), b"foo")
             self.assertEqual(f["a"], 5)
             self.assertEqual(f["b"], True)

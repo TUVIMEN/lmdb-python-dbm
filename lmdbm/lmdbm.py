@@ -303,6 +303,64 @@ class Lmdb(MutableMapping, Generic[KeyT, ValueT]):
         self.close()
 
 
+def LmdbThreadSafe(classtype=Lmdb):
+    lock = Lock()
+
+    class entity(classtype):
+        def __getitem__(self, key: KeyT) -> ValueT:
+            with lock:
+                return super().__getitem__(key)
+
+        def __setitem__(self, key: KeyT, value: ValueT) -> None:
+            with lock:
+                return super().__setitem__(key, value)
+
+        def __delitem__(self, key: KeyT) -> None:
+            with lock:
+                return super().__delitem__(key)
+
+        def keys(self) -> Iterator[KeyT]:
+            with lock:
+                return super().keys()
+
+        def items(self) -> Iterator[Tuple[KeyT, ValueT]]:
+            with lock:
+                return super().items()
+
+        def values(self) -> Iterator[ValueT]:
+            with lock:
+                return super().values()
+
+        def __contains__(self, key: KeyT) -> bool:
+            with lock:
+                return super().__contains__(key)
+
+        def __iter__(self) -> Iterator[KeyT]:
+            return super().__iter__()
+
+        def __len__(self) -> int:
+            with lock:
+                return super().__len__()
+
+        def pop(self, key: KeyT, default: Union[ValueT, GenericT] = _DEFAULT) -> Union[ValueT, GenericT]:
+            with lock:
+                return super().pop(key, default)
+
+        def update(self, __other: Any = (), **kwds: ValueT) -> None:
+            with lock:
+                return super().update(__other, **kwds)
+
+        def sync(self) -> None:
+            with lock:
+                return super().sync()
+
+        def close(self) -> None:
+            with lock:
+                return super().close()
+
+    return entity
+
+
 def LmdbJson(classtype=Lmdb):
     class entity(classtype):
         def _pre_value(self, value):
